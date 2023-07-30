@@ -1,3 +1,5 @@
+> **Warning**
+> This was forked from https://github.com/VishnuRupan/youtube-timestamp-bookmarker to add an auto updating feature.
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">

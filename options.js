@@ -2,7 +2,7 @@ document.addEventListener("yt-navigate-finish", function (event) {
   setTimeout(run, 500);
 });
 
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled?.addListener((details) => {
   const currentVersion = chrome.runtime.getManifest().version;
   const previousVersion = details.previousVersion;
   const reason = details.reason;
@@ -45,10 +45,28 @@ function run() {
   console.log(document.getElementsByClassName("bookmark-btn"));
 
   bkmarkImg.addEventListener("click", async () => {
-    setVideoTimestamp();
+    setVideoTimestamp(false);
   });
 
-  async function setVideoTimestamp() {
+  // get right video menu bar
+  const bookmarkCtnAuto = document.createElement("div");
+  bookmarkCtnAuto.classList.add("bookmark-ctn");
+
+  const bkmarkImgAuto = document.createElement("img");
+  bkmarkImgAuto.src = chrome.runtime.getURL("images/bookmark-auto.svg");
+  bkmarkImgAuto.classList.add("bookmark-btn");
+
+  bookmarkCtnAuto.appendChild(bkmarkImgAuto);
+
+  youtubeLeftControls.appendChild(bookmarkCtnAuto);
+
+  console.log(document.getElementsByClassName("bookmark-btn"));
+
+  bkmarkImgAuto.addEventListener("click", async () => {
+    setVideoTimestamp(true);
+  });
+
+  async function setVideoTimestamp(autoupdate) {
     let currentTime = document.querySelector(".ytp-time-current").innerHTML;
     let videoLength = document.querySelector(".ytp-time-duration").innerHTML;
     let currentTimeSeconds = convert(currentTime) + "s";
@@ -76,6 +94,7 @@ function run() {
       thumbnail: thumbnail,
       dateUpdated: dateUpdated,
       heart: "open",
+      autoupdate,
     };
 
     // get video array
@@ -98,6 +117,29 @@ function run() {
       chrome.storage.sync.set({ videoObj: videoArr.videoObj });
     }
   }
+
+  // Run logic every 1 minute
+  setInterval(async () => {
+    console.log("running");
+    let videoArr = await chrome.storage.sync.get("videoObj");
+
+    console.log(videoArr);
+
+    for (let video of videoArr.videoObj) {
+      if (video.autoupdate) {
+        let currentPageUrl = window.location.href.split("&t")[0];
+
+        if (video.url === currentPageUrl) {
+          let currentTime = document.querySelector(".ytp-time-current").innerHTML;
+          let currentTimeSeconds = convert(currentTime) + "s";
+          let urlTimestamp = `${currentPageUrl}&t=${currentTimeSeconds}`;
+          video.urlTimestamp = urlTimestamp;
+          video.timeStamp = currentTime;
+          chrome.storage.sync.set({ videoObj: videoArr.videoObj });
+        }
+      }
+    }
+  }, 10000);
 }
 
 function convert(input) {
